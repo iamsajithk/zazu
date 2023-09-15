@@ -1,2 +1,5 @@
 /*Import bootstrap from node_modules*/
 @import 'bootstrap/dist/css/bootstrap.css';
+body{
+    font-family: 'IBM Plex Mono', monospace;
+}
