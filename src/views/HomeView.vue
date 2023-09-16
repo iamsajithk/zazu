@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
 import Datepicker from "vue3-datepicker";
+import swal from "sweetalert2";
 
 interface Account {
+  id?: number;
   title: string;
   accountBalance: number;
   minimumBalance?: number;
@@ -10,22 +12,28 @@ interface Account {
 }
 
 interface Income {
+  id?: number;
   title: string;
   amount: number;
   isSynced?: boolean;
 }
 
 interface Expense {
+  id?: number;
   title: string;
   amount: number;
   isSynced?: boolean;
 }
 
 interface UserProfile {
+  id?: number;
+  name?: string;
+  email?: string;
+  token?: string;
   profileName: string;
-  accounts: Account[];
-  incomes: Income[];
-  expenses: Expense[];
+  accounts?: Account[];
+  incomes?: Income[];
+  expenses?: Expense[];
 }
 
 const accounts = ref<Account[]>([]);
@@ -41,12 +49,19 @@ const expenses = ref<Expense[]>([]);
 const expenseTitle = ref<string>("");
 const expenseAmount = ref<number>(0);
 
+const userProfile = ref<UserProfile>({
+  profileName: "My Profile",
+  accounts: [],
+  incomes: [],
+  expenses: [],
+});
+
 onMounted(() => {
   loadUserProfile();
 });
 const addAccount = () => {
   if (accountTitle.value == "") {
-    alert("Please enter account title");
+    swal.fire({ title: "Please enter account title" });
     return;
   }
   if (!accountBalance.value) {
@@ -66,10 +81,32 @@ const addAccount = () => {
   minimumBalance.value = 0;
   saveUserProfile();
 };
+const deleteAccount = (account: Account) => {
+  //Ask swal confirm
+  swal
+    .fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#dc3545",
+      cancelButtonColor: "#6c757d",
+      reverseButtons: true,
+    })
+    .then((result) => {
+      if (result.isConfirmed) {
+        const index = accounts.value.indexOf(account);
+        accounts.value.splice(index, 1);
+        saveUserProfile();
+      }
+    });
+};
 
 const addIncome = () => {
   if (incomeTitle.value == "") {
-    alert("Please enter income title");
+    swal.fire({ title: "Please enter income title" });
     return;
   }
   if (!incomeAmount.value) {
@@ -84,10 +121,32 @@ const addIncome = () => {
   incomeAmount.value = 0;
   saveUserProfile();
 };
+const deleteIncome = (income: Income) => {
+  //Ask swal confirm
+  swal
+    .fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#dc3545",
+      cancelButtonColor: "#6c757d",
+      reverseButtons: true,
+    })
+    .then((result) => {
+      if (result.isConfirmed) {
+        const index = incomes.value.indexOf(income);
+        incomes.value.splice(index, 1);
+        saveUserProfile();
+      }
+    });
+};
 
 const addExpense = () => {
   if (expenseTitle.value == "") {
-    alert("Please enter expense title");
+    swal.fire({ title: "Please enter expense title" });
     return;
   }
   if (!expenseAmount.value) {
@@ -102,6 +161,28 @@ const addExpense = () => {
   expenseAmount.value = 0;
   saveUserProfile();
 };
+const deleteExpense = (expense: Expense) => {
+  //Ask swal confirm
+  swal
+    .fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#dc3545",
+      cancelButtonColor: "#6c757d",
+      reverseButtons: true,
+    })
+    .then((result) => {
+      if (result.isConfirmed) {
+        const index = expenses.value.indexOf(expense);
+        expenses.value.splice(index, 1);
+        saveUserProfile();
+      }
+    });
+};
 
 const saveUserProfile = () => {
   const userProfile: UserProfile = {
@@ -114,33 +195,47 @@ const saveUserProfile = () => {
 };
 
 const loadUserProfile = () => {
-  const userProfile = localStorage.getItem("userProfile");
-  if (userProfile) {
-    const parsedUserProfile = JSON.parse(userProfile);
+  const storedUserProfile = localStorage.getItem("userProfile");
+  if (storedUserProfile) {
+    const parsedUserProfile = JSON.parse(storedUserProfile);
     if (parsedUserProfile.accounts) {
       accounts.value = parsedUserProfile.accounts;
+      userProfile.value.accounts = accounts.value;
     } else {
       accounts.value = [];
     }
     if (parsedUserProfile.incomes) {
       incomes.value = parsedUserProfile.incomes;
+      userProfile.value.incomes = incomes.value;
     } else {
       incomes.value = [];
     }
     if (parsedUserProfile.expenses) {
       expenses.value = parsedUserProfile.expenses;
+      userProfile.value.expenses = expenses.value;
     } else {
       expenses.value = [];
     }
+    userProfile.value = parsedUserProfile;
   }
+};
+const numberFormatter = (value: number) => {
+  const formatter = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "INR",
+  });
+  return formatter.format(value);
 };
 </script>
 
   <template>
   <div class="container">
     <div class="row">
-      <div class="col-12 text-center">
-        <h1>ZAZU</h1>
+      <div class="col-12">
+        <div>
+          <img src="src/assets/logo.png" class="logo dib" />
+          <h1 class="dib">Zazu</h1>
+        </div>
       </div>
     </div>
     <div class="row">
@@ -203,10 +298,31 @@ const loadUserProfile = () => {
             <h5>{{ account.title }}</h5>
             <div class="content">
               <p>
-                Balance: <b>{{ account.accountBalance }}</b>
+                Balance:
+                <b>{{
+                  account.accountBalance !== undefined
+                    ? numberFormatter(account.accountBalance)
+                    : ""
+                }}</b>
               </p>
               <p>
-                Minimum Balance: <b>{{ account.minimumBalance }}</b>
+                Minimum Balance:
+                <b>{{
+                  account.minimumBalance !== undefined
+                    ? numberFormatter(account.minimumBalance)
+                    : ""
+                }}</b>
+              </p>
+              <p>
+                <!-- <button class="btn icon-button btn-info">
+                  <v-icon name="fa-pencil-alt" />
+                </button> -->
+                <button
+                  @click="deleteAccount(account)"
+                  class="btn icon-button btn-danger"
+                >
+                  <v-icon name="fa-trash" />
+                </button>
               </p>
             </div>
           </div>
@@ -270,7 +386,23 @@ const loadUserProfile = () => {
             <h5>{{ income.title }}</h5>
             <div class="content">
               <p>
-                Amount: <b>{{ income.amount }}</b>
+                Amount:
+                <b>{{
+                  income.amount !== undefined
+                    ? numberFormatter(income.amount)
+                    : ""
+                }}</b>
+              </p>
+              <p>
+                <!-- <button class="btn icon-button btn-info">
+                  <v-icon name="fa-pencil-alt" />
+                </button> -->
+                <button
+                  @click="deleteIncome(income)"
+                  class="btn icon-button btn-danger"
+                >
+                  <v-icon name="fa-trash" />
+                </button>
               </p>
             </div>
           </div>
@@ -338,7 +470,23 @@ const loadUserProfile = () => {
             <h5>{{ expense.title }}</h5>
             <div class="content">
               <p>
-                Amount: <b>{{ expense.amount }}</b>
+                Amount:
+                <b>{{
+                  expense.amount !== undefined
+                    ? numberFormatter(expense.amount)
+                    : ""
+                }}</b>
+              </p>
+              <p>
+                <!-- <button class="btn icon-button btn-info">
+                  <v-icon name="fa-pencil-alt" />
+                </button> -->
+                <button
+                  @click="deleteExpense(expense)"
+                  class="btn icon-button btn-danger"
+                >
+                  <v-icon name="fa-trash" />
+                </button>
               </p>
             </div>
           </div>
