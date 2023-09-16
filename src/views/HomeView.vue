@@ -109,7 +109,7 @@ const addAccount = () => {
               <input
                 type="text"
                 class="form-control"
-                placeholder="Account Title"
+                placeholder="Income Title"
                 v-model="accountTitle"
               />
             </div>
