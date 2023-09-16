@@ -1,11 +1,31 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import Datepicker from "vue3-datepicker";
 
 interface Account {
   title: string;
   accountBalance: number;
   minimumBalance?: number;
+  isSynced?: boolean;
+}
+
+interface Income {
+  title: string;
+  amount: number;
+  isSynced?: boolean;
+}
+
+interface Expense {
+  title: string;
+  amount: number;
+  isSynced?: boolean;
+}
+
+interface UserProfile {
+  profileName: string;
+  accounts: Account[];
+  incomes: Income[];
+  expenses: Expense[];
 }
 
 const accounts = ref<Account[]>([]);
@@ -13,15 +33,106 @@ const accountTitle = ref<string>("");
 const accountBalance = ref<number>(0);
 const minimumBalance = ref<number>(0);
 
+const incomes = ref<Income[]>([]);
+const incomeTitle = ref<string>("");
+const incomeAmount = ref<number>(0);
+
+const expenses = ref<Expense[]>([]);
+const expenseTitle = ref<string>("");
+const expenseAmount = ref<number>(0);
+
+onMounted(() => {
+  loadUserProfile();
+});
 const addAccount = () => {
+  if (accountTitle.value == "") {
+    alert("Please enter account title");
+    return;
+  }
+  if (!accountBalance.value) {
+    accountBalance.value = 0;
+  }
+  if (!minimumBalance.value) {
+    minimumBalance.value = 0;
+  }
   accounts.value.push({
     title: accountTitle.value,
     accountBalance: accountBalance.value,
     minimumBalance: minimumBalance.value,
+    isSynced: false,
   });
   accountTitle.value = "";
   accountBalance.value = 0;
   minimumBalance.value = 0;
+  saveUserProfile();
+};
+
+const addIncome = () => {
+  if (incomeTitle.value == "") {
+    alert("Please enter income title");
+    return;
+  }
+  if (!incomeAmount.value) {
+    incomeAmount.value = 0;
+  }
+  incomes.value.push({
+    title: incomeTitle.value,
+    amount: incomeAmount.value,
+    isSynced: false,
+  });
+  incomeTitle.value = "";
+  incomeAmount.value = 0;
+  saveUserProfile();
+};
+
+const addExpense = () => {
+  if (expenseTitle.value == "") {
+    alert("Please enter expense title");
+    return;
+  }
+  if (!expenseAmount.value) {
+    expenseAmount.value = 0;
+  }
+  expenses.value.push({
+    title: expenseTitle.value,
+    amount: expenseAmount.value,
+    isSynced: false,
+  });
+  expenseTitle.value = "";
+  expenseAmount.value = 0;
+  saveUserProfile();
+};
+
+const saveUserProfile = () => {
+  const userProfile: UserProfile = {
+    profileName: "My Profile",
+    accounts: accounts.value,
+    incomes: incomes.value,
+    expenses: expenses.value,
+  };
+  localStorage.setItem("userProfile", JSON.stringify(userProfile));
+};
+
+const loadUserProfile = () => {
+  const userProfile = localStorage.getItem("userProfile");
+  if (userProfile) {
+    const parsedUserProfile = JSON.parse(userProfile);
+    if (parsedUserProfile.accounts) {
+      accounts.value = parsedUserProfile.accounts;
+    } else {
+      accounts.value = [];
+    }
+    if (parsedUserProfile.incomes) {
+      incomes.value = parsedUserProfile.incomes;
+    } else {
+      incomes.value = [];
+    }
+    if (parsedUserProfile.expenses) {
+      expenses.value = parsedUserProfile.expenses;
+    } else {
+      expenses.value = [];
+    }
+  }
 };
 </script>
 
@@ -34,10 +145,10 @@ const addAccount = () => {
     </div>
     <div class="row">
       <!-- Accounts section starts -->
-      <div class="col-6">
+      <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-xs-12">
         <div class="form-wrap">
           <h5 class="mb-3">Accounts</h5>
-          <div class="row g-3 mb-3">
+          <!-- <div class="row g-3 mb-3">
             <div class="col-6">
               <input
                 type="text"
@@ -46,8 +157,17 @@ const addAccount = () => {
                 v-model="accountTitle"
               />
             </div>
-          </div>
+          </div> -->
           <div class="row g-3">
+            <div class="col-auto">
+              <label>Account Title</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Account Title"
+                v-model="accountTitle"
+              />
+            </div>
             <div class="col-auto">
               <label>Account Balance</label>
               <input
@@ -65,10 +185,6 @@ const addAccount = () => {
                 placeholder="Minimum Balance"
                 v-model="minimumBalance"
               />
-            </div>
-            <div class="col-auto">
-              <label>Select date</label>
-              <datepicker />
             </div>
             <div class="col-12">
               <button class="btn btn-primary" @click="addAccount">
@@ -94,17 +210,21 @@ const addAccount = () => {
               </p>
             </div>
           </div>
-          <div class="empty-state" style="text-align: center">
+          <div
+            class="empty-state"
+            style="text-align: center"
+            v-if="accounts.length == 0"
+          >
             <img src="../assets/no-data.png" alt="" />
           </div>
         </div>
       </div>
       <!-- Accounts section ends -->
       <!-- Incomes section starts -->
-      <div class="col-6">
+      <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-xs-12">
         <div class="form-wrap">
           <h5 class="mb-3">Incomes</h5>
-          <div class="row g-3 mb-3">
+          <!-- <div class="row g-3 mb-3">
             <div class="col-6">
               <input
                 type="text"
@@ -113,32 +233,28 @@ const addAccount = () => {
                 v-model="accountTitle"
               />
             </div>
-          </div>
+          </div> -->
           <div class="row g-3">
             <div class="col-auto">
-              <label>Account Balance</label>
+              <label>Income Title</label>
               <input
-                type="number"
+                type="text"
                 class="form-control"
-                placeholder="Account Balance"
-                v-model="accountBalance"
+                placeholder="Income Title"
+                v-model="incomeTitle"
               />
             </div>
             <div class="col-auto">
-              <label>Minimum Balance</label>
+              <label>Amount</label>
               <input
                 type="number"
                 class="form-control"
-                placeholder="Minimum Balance"
-                v-model="minimumBalance"
+                placeholder="Amount"
+                v-model="incomeAmount"
               />
-            </div>
-            <div class="col-auto">
-              <label>Select date</label>
-              <datepicker />
             </div>
             <div class="col-12">
-              <button class="btn btn-primary" @click="addAccount">
+              <button class="btn btn-primary" @click="addIncome">
                 Add Income
               </button>
             </div>
@@ -148,25 +264,97 @@ const addAccount = () => {
           <h5>Your Incomes</h5>
           <div
             class="data-card"
-            v-for="account in accounts"
-            v-bind:key="account.title"
+            v-for="income in incomes"
+            v-bind:key="income.title"
           >
-            <h5>{{ account.title }}</h5>
+            <h5>{{ income.title }}</h5>
             <div class="content">
               <p>
-                Balance: <b>{{ account.accountBalance }}</b>
-              </p>
-              <p>
-                Minimum Balance: <b>{{ account.minimumBalance }}</b>
+                Amount: <b>{{ income.amount }}</b>
               </p>
             </div>
           </div>
-          <div class="empty-state" style="text-align: center">
+          <div
+            class="empty-state"
+            style="text-align: center"
+            v-if="incomes.length == 0"
+          >
             <img src="../assets/no-data.png" alt="" />
           </div>
         </div>
       </div>
       <!-- Incomes section ends -->
+      <!-- Expenses section starts -->
+      <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-xs-12">
+        <div class="form-wrap">
+          <h5 class="mb-3">Expenses</h5>
+          <!-- <div class="row g-3 mb-3">
+            <div class="col-6">
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Expense Title"
+                v-model="accountTitle"
+              />
+            </div>
+          </div> -->
+          <div class="row g-3">
+            <div class="col-auto">
+              <label>Expense Title</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Expense Title"
+                v-model="expenseTitle"
+              />
+            </div>
+            <div class="col-auto">
+              <label>Amount</label>
+              <input
+                type="number"
+                class="form-control"
+                placeholder="Amount"
+                v-model="expenseAmount"
+              />
+            </div>
+            <!-- <div class="col-auto">
+              <label>Select date</label>
+              <datepicker />
+            </div> -->
+            <div class="col-12">
+              <button class="btn btn-primary" @click="addExpense">
+                Add Expense
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="listing-wrap">
+          <h5>Your Expenses</h5>
+          <div
+            class="data-card"
+            v-for="expense in expenses"
+            v-bind:key="expense.title"
+          >
+            <h5>{{ expense.title }}</h5>
+            <div class="content">
+              <p>
+                Amount: <b>{{ expense.amount }}</b>
+              </p>
+            </div>
+          </div>
+          <div
+            class="empty-state"
+            style="text-align: center"
+            v-if="expenses.length == 0"
+          >
+            <img src="../assets/no-data.png" alt="" />
+          </div>
+        </div>
+      </div>
+      <!-- Expenses section ends -->
+      <div class="col-12 text-center mb-5">
+        <button class="btn btn-success btn-lg">Ask Zazu</button>
+      </div>
     </div>
   </div>
 </template>
