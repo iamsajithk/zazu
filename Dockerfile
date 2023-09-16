@@ -1,23 +1,29 @@
-# Use the official Node.js 14 image as the base image
-FROM node:18
+# Use an official Node.js runtime as the base image
+FROM node:18 AS build
 
-# Set the working directory to /app
+# Set the working directory
 WORKDIR /app
 
-# Copy the package.json and package-lock.json files to the container
+# Copy package.json and package-lock.json to the working directory
 COPY package*.json ./
 
-# Install the dependencies
+# Install dependencies
 RUN npm install
 
-# Copy the rest of the application code to the container
+# Copy the rest of the app source code to the working directory
 COPY . .
 
-# Build the Vue app for production
+# Build the Vue 3 app using Vite
 RUN npm run build
 
-# Expose port 8080 for the container
-EXPOSE 8080
+# Use Nginx as the production server
+FROM nginx:alpine
 
-# Start the server
-CMD ["npm", "run", "serve"]
+# Copy the built app from the previous stage to the Nginx default HTML directory
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Expose port 80 for the Nginx server
+EXPOSE 80
+
+# Start Nginx when the container runs
+CMD ["nginx", "-g", "daemon off;"]
