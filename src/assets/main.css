@@ -1,2 +1,57 @@
 @import './base.css';
+.form-wrap{
+    padding: 20px;
+    border: 1px solid #cdcdcd;
+    margin-bottom: 20px;
+    border-radius:24px;
+  }
+  label{
+    color: #9b9b9b;
+  }
+  .form-control{
+    border-radius: 8px;
+    padding: 10px 20px;
+    box-shadow: none!important;
+  }
+  .btn{
+    border-radius: 8px;
+    padding: 10px 20px;
+  }
+  .v3dp__datepicker input{
+    border-radius: 8px!important;
+    box-shadow: none!important;
+    padding: 10px 20px;
+    border: 1px solid #cdcdcd;
+  }
+  .listing-wrap{
+    padding: 20px;
+    border: 1px solid #cdcdcd;
+    margin-bottom: 20px;
+    border-radius:24px;
+  }
+  .listing-wrap .data-card{
+    padding-left: 24px;
+    border-left: 1px solid #cdcdcd;
+    position: relative;
+    margin-left: 13px;
+    margin-top: 15px;
+  }
+  .listing-wrap .data-card ::before{
+    position: absolute;
+    content: url(/src/assets/wallet.svg);
+    left: -15px;
+    top: 0;
+    width: 30px;
+    height: 30px;
+    padding: 5px;
+    border-radius: 40px;
+    display: grid;
+    place-items: center;
+    background: #000;
+  }
+  .listing-wrap .data-card p{
+    margin-bottom: 5px;
+  }
+  .listing-wrap .content{
 
+  }
