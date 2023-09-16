@@ -233,7 +233,7 @@ const numberFormatter = (value: number) => {
     <div class="row">
       <div class="col-12">
         <div>
-          <img src="src/assets/logo.png" class="logo dib" />
+          <img src="/src/assets/logo.png" class="logo dib" />
           <h1 class="dib">Zazu</h1>
         </div>
       </div>
