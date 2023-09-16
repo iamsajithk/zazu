@@ -2,6 +2,7 @@
 import { onMounted, ref } from "vue";
 import Datepicker from "vue3-datepicker";
 import swal from "sweetalert2";
+import axios from "axios";
 
 interface Account {
   id?: number;
@@ -55,6 +56,13 @@ const userProfile = ref<UserProfile>({
   incomes: [],
   expenses: [],
 });
+
+const signInEmail = ref<string>("");
+const signInPassword = ref<string>("");
+
+const signUpName = ref<string>("");
+const signUpEmail = ref<string>("");
+const signUpPassword = ref<string>("");
 
 onMounted(() => {
   loadUserProfile();
@@ -225,6 +233,154 @@ const numberFormatter = (value: number) => {
     currency: "INR",
   });
   return formatter.format(value);
+};
+
+const openAuthModal = () => {
+  const authModal = document.getElementById("authModal");
+  const authTabs = document.getElementById("authTabs");
+  const authTabContent = document.getElementById("authTabContent");
+  const signInTab = document.getElementById("signin-tab");
+  const signInPane = document.getElementById("signin");
+  const signUpTab = document.getElementById("signup-tab");
+  const signUpPane = document.getElementById("signup");
+  authModal?.classList.add("show");
+  authModal?.setAttribute("aria-modal", "true");
+  authModal?.setAttribute("style", "display: block");
+  authModal?.setAttribute("aria-hidden", "false");
+  authTabs?.classList.remove("fade");
+  authTabContent?.classList.remove("fade");
+  signInTab?.classList.add("active");
+  signInPane?.classList.add("active");
+  signInPane?.classList.add("show");
+  signUpTab?.classList.remove("active");
+  signUpPane?.classList.remove("active");
+  signUpPane?.classList.remove("show");
+};
+const closeAuthModal = () => {
+  const authModal = document.getElementById("authModal");
+  const authTabs = document.getElementById("authTabs");
+  const authTabContent = document.getElementById("authTabContent");
+  const signInTab = document.getElementById("signin-tab");
+  const signInPane = document.getElementById("signin");
+  const signUpTab = document.getElementById("signup-tab");
+  const signUpPane = document.getElementById("signup");
+  authModal?.classList.remove("show");
+  authModal?.setAttribute("aria-modal", "false");
+  authModal?.setAttribute("style", "display: none");
+  authModal?.setAttribute("aria-hidden", "true");
+  authTabs?.classList.add("fade");
+  authTabContent?.classList.add("fade");
+  signInTab?.classList.add("active");
+  signInPane?.classList.add("active");
+  signInPane?.classList.add("show");
+  signUpTab?.classList.remove("active");
+  signUpPane?.classList.remove("active");
+  signUpPane?.classList.remove("show");
+};
+const openSignInTab = () => {
+  const signInTab = document.getElementById("signin-tab");
+  const signInPane = document.getElementById("signin");
+  const signUpTab = document.getElementById("signup-tab");
+  const signUpPane = document.getElementById("signup");
+  const authTabContent = document.getElementById("authTabContent");
+  signInTab?.classList.add("active");
+  signInPane?.classList.add("active");
+  signInPane?.classList.add("show");
+  signUpTab?.classList.remove("active");
+  signUpPane?.classList.remove("active");
+  signUpPane?.classList.remove("show");
+  authTabContent?.classList.remove("fade");
+};
+const openSignUpTab = () => {
+  const signInTab = document.getElementById("signin-tab");
+  const signInPane = document.getElementById("signin");
+  const signUpTab = document.getElementById("signup-tab");
+  const signUpPane = document.getElementById("signup");
+  const authTabContent = document.getElementById("authTabContent");
+  signInTab?.classList.remove("active");
+  signInPane?.classList.remove("active");
+  signInPane?.classList.remove("show");
+  signUpTab?.classList.add("active");
+  signUpPane?.classList.add("active");
+  signUpPane?.classList.add("show");
+  authTabContent?.classList.remove("fade");
+};
+const openChatSection = () => {
+  if (userProfile.value.token) {
+  } else {
+    openAuthModal();
+  }
+};
+
+const doSignIn = () => {
+  //Do axios API call
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  console.log(apiBaseUrl);
+  axios
+    .post(`${apiBaseUrl}/api/auth/sign-in`, {
+      email: signInEmail.value,
+      password: signInPassword.value,
+    })
+    .then(function (response: any) {
+      console.log(response);
+      if (response.data.token) {
+        signInEmail.value = "";
+        signInPassword.value = "";
+        userProfile.value.token = response.data.token;
+        userProfile.value.name = response.data.name;
+        userProfile.value.email = response.data.email;
+        localStorage.setItem("userProfile", JSON.stringify(userProfile.value));
+        closeAuthModal();
+      }
+    })
+    .catch(function (error: any) {
+      console.log(error);
+    });
+};
+const doSignUp = () => {
+  //Do axios API call
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  console.log(apiBaseUrl);
+  axios
+    .post(`${apiBaseUrl}/api/auth/sign-up`, {
+      name: signUpName.value,
+      email: signUpEmail.value,
+      password: signUpPassword.value,
+    })
+    .then(function (response: any) {
+      console.log(response);
+      if(response.data.status=='success'){
+      if (response.data.token) {
+        signUpName.value = "";
+        signUpEmail.value = "";
+        signUpPassword.value = "";
+        userProfile.value.token = response.data.token;
+        userProfile.value.name = response.data.name;
+        userProfile.value.email = response.data.email;
+        localStorage.setItem("userProfile", JSON.stringify(userProfile.value));
+        closeAuthModal();
+      }
+    }else{
+      swal.fire({ title: response.data.message });
+    }
+    })
+    .catch(function (error: any) {
+      console.log(error);
+    });
+};
+
+const doLogOut = () => {
+  localStorage.removeItem("userProfile");
+  userProfile.value = {
+    profileName: "My Profile",
+    accounts: [],
+    incomes: [],
+    expenses: [],
+  };
+  accounts.value = [];
+  incomes.value = [];
+  expenses.value = [];
+  saveUserProfile();
 };
 </script>
 
@@ -501,7 +657,176 @@ const numberFormatter = (value: number) => {
       </div>
       <!-- Expenses section ends -->
       <div class="col-12 text-center mb-5">
-        <button class="btn btn-success btn-lg">Ask Zazu</button>
+        <button @click="openChatSection" class="btn btn-success btn-lg">
+          Ask Zazu
+        </button>
+        <button
+          @click="doLogOut"
+          v-if="userProfile.token"
+          class="btn btn-warning btn-lg"
+        >
+          Log Out
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div
+    class="modal fade"
+    id="authModal"
+    tabindex="-1"
+    aria-labelledby="authModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="authModalLabel">Sign In/Sign Up</h5>
+          <button
+            type="button"
+            class="btn-close"
+            @click="closeAuthModal"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <!-- Authentication tabs -->
+          <ul class="nav nav-tabs" id="authTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link active"
+                id="signin-tab"
+                @click="openSignInTab"
+                role="tab"
+                aria-controls="signin"
+                aria-selected="true"
+                >Sign In</a
+              >
+            </li>
+            <li class="nav-item" role="presentation">
+              <a
+                class="nav-link"
+                id="signup-tab"
+                @click="openSignUpTab"
+                role="tab"
+                aria-controls="signup"
+                aria-selected="false"
+                >Sign Up</a
+              >
+            </li>
+          </ul>
+
+          <!-- Tab panes -->
+          <div class="tab-content" id="authTabContent">
+            <!-- Sign In Tab -->
+            <div
+              class="tab-pane fade show active"
+              id="signin"
+              role="tabpanel"
+              aria-labelledby="signin-tab"
+            >
+              <!-- Sign In Form -->
+              <form @submit.prevent="doSignIn">
+                <div class="mb-3">
+                  <label for="signInEmail" class="form-label"
+                    >Email address</label
+                  >
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="signInEmail"
+                    v-model="signInEmail"
+                    placeholder="Enter your email"
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="signInPassword" class="form-label"
+                    >Password</label
+                  >
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="signInPassword"
+                    v-model="signInPassword"
+                    placeholder="Enter your password"
+                  />
+                </div>
+                <button type="submit" class="btn btn-primary">Sign In</button>
+              </form>
+            </div>
+
+            <!-- Sign Up Tab -->
+            <div
+              class="tab-pane fade"
+              id="signup"
+              role="tabpanel"
+              aria-labelledby="signup-tab"
+            >
+              <!-- Sign Up Form -->
+              <form @submit.prevent="doSignUp">
+                <div class="mb-3">
+                  <label for="signUpName" class="form-label">Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="signUpName"
+                    v-model="signUpName"
+                    placeholder="Enter your name"
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="signUpEmail" class="form-label"
+                    >Email address</label
+                  >
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="signUpEmail"
+                    v-model="signUpEmail"
+                    placeholder="Enter your email"
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="signUpPassword" class="form-label"
+                    >Password</label
+                  >
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="signUpPassword"
+                    v-model="signUpPassword"
+                    placeholder="Create a password"
+                  />
+                </div>
+                <button type="submit" class="btn btn-primary">Sign Up</button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <p class="text-muted">
+            Already have an account?
+            <a
+              class="link"
+              @click="openSignInTab"
+              role="tab"
+              aria-controls="signin"
+              aria-selected="true"
+              >Sign In</a
+            >
+          </p>
+          <p class="text-muted">
+            Need an account?
+            <a
+              class="link"
+              @click="openSignUpTab"
+              role="tab"
+              aria-controls="signup"
+              aria-selected="false"
+              >Sign Up</a
+            >
+          </p>
+        </div>
       </div>
     </div>
   </div>

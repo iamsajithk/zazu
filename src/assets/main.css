@@ -77,3 +77,11 @@ img.logo {
 .icon-button:hover {
   cursor: pointer;
 }
+.link{
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+.link:hover{
+  text-decoration: underline;
+}
