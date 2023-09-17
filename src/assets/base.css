@@ -1,5 +1,12 @@
 /*Import bootstrap from node_modules*/
 @import 'bootstrap/dist/css/bootstrap.css';
+@import "@marcoschulte/vue3-progress/dist/";
+/*Set variable $vue3-progress-bar-color*/
+:root {
+    --vue3-progress-bar-color: #000;
+}
+
+
 body{
     font-family: 'IBM Plex Mono', monospace;
 }

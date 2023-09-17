@@ -3,6 +3,7 @@ import { onMounted, ref } from "vue";
 import Datepicker from "vue3-datepicker";
 import swal from "sweetalert2";
 import axios from "axios";
+import { useProgress } from "@marcoschulte/vue3-progress";
 
 interface Account {
   id?: number;
@@ -10,6 +11,7 @@ interface Account {
   accountBalance: number;
   minimumBalance?: number;
   isSynced?: boolean;
+  isSyncing?: boolean;
 }
 
 interface Income {
@@ -17,6 +19,7 @@ interface Income {
   title: string;
   amount: number;
   isSynced?: boolean;
+  isSyncing?: boolean;
 }
 
 interface Expense {
@@ -24,6 +27,7 @@ interface Expense {
   title: string;
   amount: number;
   isSynced?: boolean;
+  isSyncing?: boolean;
 }
 
 interface UserProfile {
@@ -59,6 +63,7 @@ const userProfile = ref<UserProfile>({
 
 const signInEmail = ref<string>("");
 const signInPassword = ref<string>("");
+const isSigningIn = ref<boolean>(false);
 
 const signUpName = ref<string>("");
 const signUpEmail = ref<string>("");
@@ -83,11 +88,12 @@ const addAccount = () => {
     accountBalance: accountBalance.value,
     minimumBalance: minimumBalance.value,
     isSynced: false,
+    isSyncing: false,
   });
   accountTitle.value = "";
   accountBalance.value = 0;
   minimumBalance.value = 0;
-  saveUserProfile();
+  saveUserProfile(true);
 };
 const deleteAccount = (account: Account) => {
   //Ask swal confirm
@@ -107,7 +113,28 @@ const deleteAccount = (account: Account) => {
       if (result.isConfirmed) {
         const index = accounts.value.indexOf(account);
         accounts.value.splice(index, 1);
-        saveUserProfile();
+        saveUserProfile(false);
+        if (account.id && account.id > 0 && userProfile.value.token) {
+          //Do axios API call
+          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+          console.log(apiBaseUrl);
+          axios
+            .post(
+              `${apiBaseUrl}/api/account/delete`,
+              {
+                id: account.id,
+              },
+              {
+                headers: {
+                  Authorization: `${userProfile.value.token}`,
+                },
+              }
+            )
+            .then(function (response: any) {})
+            .catch(function (error: any) {
+              console.log(error);
+            });
+        }
       }
     });
 };
@@ -124,10 +151,11 @@ const addIncome = () => {
     title: incomeTitle.value,
     amount: incomeAmount.value,
     isSynced: false,
+    isSyncing: false,
   });
   incomeTitle.value = "";
   incomeAmount.value = 0;
-  saveUserProfile();
+  saveUserProfile(true);
 };
 const deleteIncome = (income: Income) => {
   //Ask swal confirm
@@ -147,7 +175,28 @@ const deleteIncome = (income: Income) => {
       if (result.isConfirmed) {
         const index = incomes.value.indexOf(income);
         incomes.value.splice(index, 1);
-        saveUserProfile();
+        saveUserProfile(false);
+        if (income.id && income.id > 0 && userProfile.value.token) {
+          //Do axios API call
+          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+          console.log(apiBaseUrl);
+          axios
+            .post(
+              `${apiBaseUrl}/api/income/delete`,
+              {
+                id: income.id,
+              },
+              {
+                headers: {
+                  Authorization: `${userProfile.value.token}`,
+                },
+              }
+            )
+            .then(function (response: any) {})
+            .catch(function (error: any) {
+              console.log(error);
+            });
+        }
       }
     });
 };
@@ -164,10 +213,11 @@ const addExpense = () => {
     title: expenseTitle.value,
     amount: expenseAmount.value,
     isSynced: false,
+    isSyncing: false,
   });
   expenseTitle.value = "";
   expenseAmount.value = 0;
-  saveUserProfile();
+  saveUserProfile(true);
 };
 const deleteExpense = (expense: Expense) => {
   //Ask swal confirm
@@ -187,19 +237,46 @@ const deleteExpense = (expense: Expense) => {
       if (result.isConfirmed) {
         const index = expenses.value.indexOf(expense);
         expenses.value.splice(index, 1);
-        saveUserProfile();
+        saveUserProfile(false);
+        if (expense.id && expense.id > 0 && userProfile.value.token) {
+          //Do axios API call
+          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+          console.log(apiBaseUrl);
+          axios
+            .post(
+              `${apiBaseUrl}/api/expense/delete`,
+              {
+                id: expense.id,
+              },
+              {
+                headers: {
+                  Authorization: `${userProfile.value.token}`,
+                },
+              }
+            )
+            .then(function (response: any) {})
+            .catch(function (error: any) {
+              console.log(error);
+            });
+        }
       }
     });
 };
 
-const saveUserProfile = () => {
-  const userProfile: UserProfile = {
-    profileName: "My Profile",
+const saveUserProfile = (sync?: boolean) => {
+  const userProfileToSave: UserProfile = {
+    name: userProfile.value.name,
+    email: userProfile.value.email,
+    token: userProfile.value.token,
+    profileName: userProfile.value.profileName,
     accounts: accounts.value,
     incomes: incomes.value,
     expenses: expenses.value,
   };
-  localStorage.setItem("userProfile", JSON.stringify(userProfile));
+  localStorage.setItem("userProfile", JSON.stringify(userProfileToSave));
+  if (sync && userProfile.value.token) {
+    syncData();
+  }
 };
 
 const loadUserProfile = () => {
@@ -225,6 +302,151 @@ const loadUserProfile = () => {
       expenses.value = [];
     }
     userProfile.value = parsedUserProfile;
+  }
+};
+
+const saveAccount = (account: Account) => {
+  //Set isSyncing to true
+  const index = accounts.value.indexOf(account);
+  accounts.value[index].isSyncing = true;
+  const progress = useProgress().start();
+  //Do axios API call
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  console.log(apiBaseUrl);
+  axios
+    .post(
+      `${apiBaseUrl}/api/account/save`,
+      {
+        id: account.id,
+        name: account.title,
+        account_balance: account.accountBalance,
+        minimum_balance: account.minimumBalance,
+      },
+      {
+        headers: {
+          Authorization: `${userProfile.value.token}`,
+        },
+      }
+    )
+    .then(function (response: any) {
+      progress.finish();
+      console.log(response);
+      if (response.data.status == "success") {
+        if (response.data.id) {
+          accounts.value[index].id = response.data.id;
+          accounts.value[index].isSynced = true;
+          accounts.value[index].isSyncing = false;
+          saveUserProfile(false);
+        }
+      } else {
+        swal.fire({ title: response.data.message });
+      }
+    })
+    .catch(function (error: any) {
+      progress.finish();
+      console.log(error);
+    });
+};
+
+const saveIncome = (income: Income) => {
+  //Set isSyncing to true
+  const index = incomes.value.indexOf(income);
+  incomes.value[index].isSyncing = true;
+  const progress = useProgress().start();
+  //Do axios API call
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  console.log(apiBaseUrl);
+  axios
+    .post(
+      `${apiBaseUrl}/api/income/save`,
+      {
+        id: income.id,
+        name: income.title,
+        amount: income.amount,
+      },
+      {
+        headers: {
+          Authorization: `${userProfile.value.token}`,
+        },
+      }
+    )
+    .then(function (response: any) {
+      progress.finish();
+      console.log(response);
+      if (response.data.status == "success") {
+        if (response.data.id) {
+          incomes.value[index].id = response.data.id;
+          incomes.value[index].isSynced = true;
+          incomes.value[index].isSyncing = false;
+          saveUserProfile(false);
+        }
+      } else {
+        swal.fire({ title: response.data.message });
+      }
+    })
+    .catch(function (error: any) {
+      progress.finish();
+      console.log(error);
+    });
+};
+
+const saveExpense = (expense: Expense) => {
+  //Set isSyncing to true
+  const index = expenses.value.indexOf(expense);
+  expenses.value[index].isSyncing = true;
+  const progress = useProgress().start();
+  //Do axios API call
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  console.log(apiBaseUrl);
+  axios
+    .post(
+      `${apiBaseUrl}/api/expense/save`,
+      {
+        id: expense.id,
+        name: expense.title,
+        amount: expense.amount,
+      },
+      {
+        headers: {
+          Authorization: `${userProfile.value.token}`,
+        },
+      }
+    )
+    .then(function (response: any) {
+      progress.finish();
+      console.log(response);
+      if (response.data.status == "success") {
+        if (response.data.id) {
+          expenses.value[index].id = response.data.id;
+          expenses.value[index].isSynced = true;
+          expenses.value[index].isSyncing = false;
+          saveUserProfile(false);
+        }
+      } else {
+        swal.fire({ title: response.data.message });
+      }
+    })
+    .catch(function (error: any) {
+      progress.finish();
+      console.log(error);
+    });
+};
+
+const syncData = () => {
+  for (let account of accounts.value) {
+    if (!account.isSynced) {
+      saveAccount(account);
+    }
+  }
+  for (let income of incomes.value) {
+    if (!income.isSynced) {
+      saveIncome(income);
+    }
+  }
+  for (let expense of expenses.value) {
+    if (!expense.isSynced) {
+      saveExpense(expense);
+    }
   }
 };
 const numberFormatter = (value: number) => {
@@ -313,6 +535,11 @@ const openChatSection = () => {
 };
 
 const doSignIn = () => {
+  if (isSigningIn.value) {
+    return;
+  }
+  isSigningIn.value = true;
+  const progress = useProgress().start();
   //Do axios API call
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   console.log(apiBaseUrl);
@@ -322,18 +549,29 @@ const doSignIn = () => {
       password: signInPassword.value,
     })
     .then(function (response: any) {
+      isSigningIn.value = false;
+      progress.finish();
       console.log(response);
-      if (response.data.token) {
-        signInEmail.value = "";
-        signInPassword.value = "";
-        userProfile.value.token = response.data.token;
-        userProfile.value.name = response.data.name;
-        userProfile.value.email = response.data.email;
-        localStorage.setItem("userProfile", JSON.stringify(userProfile.value));
-        closeAuthModal();
+      if (response.data.status == "success") {
+        if (response.data.token) {
+          signInEmail.value = "";
+          signInPassword.value = "";
+          userProfile.value.token = response.data.token;
+          userProfile.value.name = response.data.name;
+          userProfile.value.email = response.data.email;
+          localStorage.setItem(
+            "userProfile",
+            JSON.stringify(userProfile.value)
+          );
+          closeAuthModal();
+        }
+      } else {
+        swal.fire({ title: response.data.message });
       }
     })
     .catch(function (error: any) {
+      isSigningIn.value = false;
+      progress.finish();
       console.log(error);
     });
 };
@@ -349,20 +587,23 @@ const doSignUp = () => {
     })
     .then(function (response: any) {
       console.log(response);
-      if(response.data.status=='success'){
-      if (response.data.token) {
-        signUpName.value = "";
-        signUpEmail.value = "";
-        signUpPassword.value = "";
-        userProfile.value.token = response.data.token;
-        userProfile.value.name = response.data.name;
-        userProfile.value.email = response.data.email;
-        localStorage.setItem("userProfile", JSON.stringify(userProfile.value));
-        closeAuthModal();
+      if (response.data.status == "success") {
+        if (response.data.token) {
+          signUpName.value = "";
+          signUpEmail.value = "";
+          signUpPassword.value = "";
+          userProfile.value.token = response.data.token;
+          userProfile.value.name = response.data.name;
+          userProfile.value.email = response.data.email;
+          localStorage.setItem(
+            "userProfile",
+            JSON.stringify(userProfile.value)
+          );
+          closeAuthModal();
+        }
+      } else {
+        swal.fire({ title: response.data.message });
       }
-    }else{
-      swal.fire({ title: response.data.message });
-    }
     })
     .catch(function (error: any) {
       console.log(error);
@@ -385,6 +626,7 @@ const doLogOut = () => {
 </script>
 
   <template>
+  <vue3-progress-bar></vue3-progress-bar>
   <div class="container">
     <div class="row">
       <div class="col-12">
@@ -666,6 +908,13 @@ const doLogOut = () => {
           class="btn btn-warning btn-lg"
         >
           Log Out
+        </button>
+        <button
+          @click="syncData"
+          v-if="userProfile.token"
+          class="btn icon-button btn-danger"
+        >
+          <v-icon name="fa-sync" />
         </button>
       </div>
     </div>
