@@ -305,7 +305,7 @@ const loadUserProfile = () => {
   }
 };
 
-const saveAccount = (account: Account) => {
+const saveAccount = async (account: Account) => {
   //Set isSyncing to true
   const index = accounts.value.indexOf(account);
   accounts.value[index].isSyncing = true;
@@ -313,7 +313,7 @@ const saveAccount = (account: Account) => {
   //Do axios API call
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   console.log(apiBaseUrl);
-  axios
+  await axios
     .post(
       `${apiBaseUrl}/api/account/save`,
       {
@@ -348,7 +348,7 @@ const saveAccount = (account: Account) => {
     });
 };
 
-const saveIncome = (income: Income) => {
+const saveIncome = async (income: Income) => {
   //Set isSyncing to true
   const index = incomes.value.indexOf(income);
   incomes.value[index].isSyncing = true;
@@ -356,7 +356,7 @@ const saveIncome = (income: Income) => {
   //Do axios API call
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   console.log(apiBaseUrl);
-  axios
+  await axios
     .post(
       `${apiBaseUrl}/api/income/save`,
       {
@@ -390,7 +390,7 @@ const saveIncome = (income: Income) => {
     });
 };
 
-const saveExpense = (expense: Expense) => {
+const saveExpense = async (expense: Expense) => {
   //Set isSyncing to true
   const index = expenses.value.indexOf(expense);
   expenses.value[index].isSyncing = true;
@@ -398,7 +398,7 @@ const saveExpense = (expense: Expense) => {
   //Do axios API call
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   console.log(apiBaseUrl);
-  axios
+  await axios
     .post(
       `${apiBaseUrl}/api/expense/save`,
       {
@@ -432,22 +432,25 @@ const saveExpense = (expense: Expense) => {
     });
 };
 
-const syncData = () => {
+const syncData = async () => {
   for (let account of accounts.value) {
     if (!account.isSynced) {
-      saveAccount(account);
+      await saveAccount(account);
     }
   }
   for (let income of incomes.value) {
     if (!income.isSynced) {
-      saveIncome(income);
+      await saveIncome(income);
     }
   }
   for (let expense of expenses.value) {
     if (!expense.isSynced) {
-      saveExpense(expense);
+      await saveExpense(expense);
     }
   }
+  loadExistingAccounts();
+  loadExistingIncomes();
+  loadExistingExpenses();
 };
 const numberFormatter = (value: number) => {
   const formatter = new Intl.NumberFormat("en-US", {
@@ -553,14 +556,24 @@ const loadExistingAccounts = () => {
       if (response.data.status == "success") {
         if (response.data.accounts) {
           for (let account of response.data.accounts) {
-            accounts.value.push({
-              id: account.id,
-              title: account.name,
-              accountBalance: account.account_balance,
-              minimumBalance: account.minimum_balance,
-              isSynced: true,
-              isSyncing: false,
-            });
+            //Check if account is already added
+            let isAccountAlreadyAdded = false;
+            for (let existingAccount of accounts.value) {
+              if (existingAccount.id == account.id) {
+                isAccountAlreadyAdded = true;
+                break;
+              }
+            }
+            if (!isAccountAlreadyAdded) {
+              accounts.value.push({
+                id: account.id,
+                title: account.name,
+                accountBalance: account.account_balance,
+                minimumBalance: account.minimum_balance,
+                isSynced: true,
+                isSyncing: false,
+              });
+            }
           }
           saveUserProfile(false);
         }
@@ -592,13 +605,23 @@ const loadExistingIncomes = () => {
       if (response.data.status == "success") {
         if (response.data.incomes) {
           for (let income of response.data.incomes) {
-            incomes.value.push({
-              id: income.id,
-              title: income.name,
-              amount: income.amount,
-              isSynced: true,
-              isSyncing: false,
-            });
+            //Check if income is already added
+            let isIncomeAlreadyAdded = false;
+            for (let existingIncome of incomes.value) {
+              if (existingIncome.id == income.id) {
+                isIncomeAlreadyAdded = true;
+                break;
+              }
+            }
+            if (!isIncomeAlreadyAdded) {
+              incomes.value.push({
+                id: income.id,
+                title: income.name,
+                amount: income.amount,
+                isSynced: true,
+                isSyncing: false,
+              });
+            }
           }
           saveUserProfile(false);
         }
@@ -630,13 +653,23 @@ const loadExistingExpenses = () => {
       if (response.data.status == "success") {
         if (response.data.expenses) {
           for (let expense of response.data.expenses) {
-            expenses.value.push({
-              id: expense.id,
-              title: expense.name,
-              amount: expense.amount,
-              isSynced: true,
-              isSyncing: false,
-            });
+            //Check if expense is already added
+            let isExpenseAlreadyAdded = false;
+            for (let existingExpense of expenses.value) {
+              if (existingExpense.id == expense.id) {
+                isExpenseAlreadyAdded = true;
+                break;
+              }
+            }
+            if (!isExpenseAlreadyAdded) {
+              expenses.value.push({
+                id: expense.id,
+                title: expense.name,
+                amount: expense.amount,
+                isSynced: true,
+                isSyncing: false,
+              });
+            }
           }
           saveUserProfile(false);
         }
@@ -679,6 +712,7 @@ const doSignIn = () => {
             JSON.stringify(userProfile.value)
           );
           closeAuthModal();
+          syncData();
           loadExistingAccounts();
           loadExistingIncomes();
           loadExistingExpenses();
@@ -740,6 +774,36 @@ const doLogOut = () => {
   incomes.value = [];
   expenses.value = [];
   saveUserProfile();
+};
+const clearAllData = () => {
+  //Ask swal confirm
+  swal
+    .fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Clear All",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#dc3545",
+      cancelButtonColor: "#6c757d",
+      reverseButtons: true,
+    })
+    .then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem("userProfile");
+        userProfile.value = {
+          profileName: "My Profile",
+          accounts: [],
+          incomes: [],
+          expenses: [],
+        };
+        accounts.value = [];
+        incomes.value = [];
+        expenses.value = [];
+        saveUserProfile();
+      }
+    });
 };
 </script>
 
@@ -1023,9 +1087,16 @@ const doLogOut = () => {
         <button
           @click="doLogOut"
           v-if="userProfile.token"
-          class="btn btn-warning btn-lg"
+          class="btn btn-warning btn-lg mx-1"
         >
           Log Out
+        </button>
+        <button
+          @click="clearAllData"
+          v-if="!userProfile.token"
+          class="btn btn-danger btn-lg mx-1"
+        >
+          Clear All
         </button>
         <button
           @click="syncData"
