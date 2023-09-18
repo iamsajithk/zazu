@@ -69,6 +69,8 @@ const signUpName = ref<string>("");
 const signUpEmail = ref<string>("");
 const signUpPassword = ref<string>("");
 
+const viewMode = ref<string>("data");
+
 onMounted(() => {
   loadUserProfile();
 });
@@ -532,6 +534,7 @@ const openSignUpTab = () => {
 };
 const openChatSection = () => {
   if (userProfile.value.token) {
+    viewMode.value = "chat";
   } else {
     openAuthModal();
   }
@@ -716,6 +719,7 @@ const doSignIn = () => {
           loadExistingAccounts();
           loadExistingIncomes();
           loadExistingExpenses();
+          viewMode.value = "chat";
         }
       } else {
         swal.fire({ title: response.data.message });
@@ -752,6 +756,8 @@ const doSignUp = () => {
             JSON.stringify(userProfile.value)
           );
           closeAuthModal();
+          syncData();
+          viewMode.value = "chat";
         }
       } else {
         swal.fire({ title: response.data.message });
@@ -818,7 +824,7 @@ const clearAllData = () => {
         </div>
       </div>
     </div>
-    <div class="row">
+    <div class="row" v-if="viewMode=='data'">
       <!-- Accounts section starts -->
       <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-xs-12">
         <div class="form-wrap">
@@ -1105,6 +1111,32 @@ const clearAllData = () => {
         >
           <v-icon name="fa-sync" />
         </button>
+      </div>
+    </div>
+    <div class="row" v-if="viewMode=='chat'">
+      <div class="col-12">
+        <div class="chat-container">
+        <div class="chat-header">
+            Zazu
+        </div>
+        <div class="chat-body">
+            <div class="message user-message">
+                <div class="message-bubble">
+                    Hello, how can I help you?
+                </div>
+            </div>
+            <div class="message bot-message">
+                <div class="message-bubble">
+                    Hi! I have a question about AI.
+                </div>
+            </div>
+            <!-- Add more messages here -->
+        </div>
+        <div class="message-input">
+            <input type="text" placeholder="Type your message...">
+            <button>Send</button>
+        </div>
+    </div>
       </div>
     </div>
   </div>
