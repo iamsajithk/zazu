@@ -534,6 +534,121 @@ const openChatSection = () => {
   }
 };
 
+const loadExistingAccounts = () => {
+  //Do axios API call
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  console.log(apiBaseUrl);
+  axios
+    .post(
+      `${apiBaseUrl}/api/accounts`,
+      {},
+      {
+        headers: {
+          Authorization: `${userProfile.value.token}`,
+        },
+      }
+    )
+    .then(function (response: any) {
+      console.log(response);
+      if (response.data.status == "success") {
+        if (response.data.accounts) {
+          for (let account of response.data.accounts) {
+            accounts.value.push({
+              id: account.id,
+              title: account.name,
+              accountBalance: account.account_balance,
+              minimumBalance: account.minimum_balance,
+              isSynced: true,
+              isSyncing: false,
+            });
+          }
+          saveUserProfile(false);
+        }
+      } else {
+        swal.fire({ title: response.data.message });
+      }
+    })
+    .catch(function (error: any) {
+      console.log(error);
+    });
+};
+
+const loadExistingIncomes = () => {
+  //Do axios API call
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  console.log(apiBaseUrl);
+  axios
+    .post(
+      `${apiBaseUrl}/api/incomes`,
+      {},
+      {
+        headers: {
+          Authorization: `${userProfile.value.token}`,
+        },
+      }
+    )
+    .then(function (response: any) {
+      console.log(response);
+      if (response.data.status == "success") {
+        if (response.data.incomes) {
+          for (let income of response.data.incomes) {
+            incomes.value.push({
+              id: income.id,
+              title: income.name,
+              amount: income.amount,
+              isSynced: true,
+              isSyncing: false,
+            });
+          }
+          saveUserProfile(false);
+        }
+      } else {
+        swal.fire({ title: response.data.message });
+      }
+    })
+    .catch(function (error: any) {
+      console.log(error);
+    });
+};
+
+const loadExistingExpenses = () => {
+  //Do axios API call
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  console.log(apiBaseUrl);
+  axios
+    .post(
+      `${apiBaseUrl}/api/expenses`,
+      {},
+      {
+        headers: {
+          Authorization: `${userProfile.value.token}`,
+        },
+      }
+    )
+    .then(function (response: any) {
+      console.log(response);
+      if (response.data.status == "success") {
+        if (response.data.expenses) {
+          for (let expense of response.data.expenses) {
+            expenses.value.push({
+              id: expense.id,
+              title: expense.name,
+              amount: expense.amount,
+              isSynced: true,
+              isSyncing: false,
+            });
+          }
+          saveUserProfile(false);
+        }
+      } else {
+        swal.fire({ title: response.data.message });
+      }
+    })
+    .catch(function (error: any) {
+      console.log(error);
+    });
+};
+
 const doSignIn = () => {
   if (isSigningIn.value) {
     return;
@@ -564,6 +679,9 @@ const doSignIn = () => {
             JSON.stringify(userProfile.value)
           );
           closeAuthModal();
+          loadExistingAccounts();
+          loadExistingIncomes();
+          loadExistingExpenses();
         }
       } else {
         swal.fire({ title: response.data.message });
