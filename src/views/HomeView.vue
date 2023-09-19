@@ -73,6 +73,7 @@ const viewMode = ref<string>("data");
 
 onMounted(() => {
   loadUserProfile();
+  syncData();
 });
 const addAccount = () => {
   if (accountTitle.value == "") {
@@ -435,24 +436,26 @@ const saveExpense = async (expense: Expense) => {
 };
 
 const syncData = async () => {
-  for (let account of accounts.value) {
-    if (!account.isSynced) {
-      await saveAccount(account);
+  if (userProfile.value.token) {
+    for (let account of accounts.value) {
+      if (!account.isSynced) {
+        await saveAccount(account);
+      }
     }
-  }
-  for (let income of incomes.value) {
-    if (!income.isSynced) {
-      await saveIncome(income);
+    for (let income of incomes.value) {
+      if (!income.isSynced) {
+        await saveIncome(income);
+      }
     }
-  }
-  for (let expense of expenses.value) {
-    if (!expense.isSynced) {
-      await saveExpense(expense);
+    for (let expense of expenses.value) {
+      if (!expense.isSynced) {
+        await saveExpense(expense);
+      }
     }
+    loadExistingAccounts();
+    loadExistingIncomes();
+    loadExistingExpenses();
   }
-  loadExistingAccounts();
-  loadExistingIncomes();
-  loadExistingExpenses();
 };
 const numberFormatter = (value: number) => {
   const formatter = new Intl.NumberFormat("en-US", {
@@ -824,7 +827,7 @@ const clearAllData = () => {
         </div>
       </div>
     </div>
-    <div class="row" v-if="viewMode=='data'">
+    <div class="row" v-if="viewMode == 'data'">
       <!-- Accounts section starts -->
       <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-xs-12">
         <div class="form-wrap">
@@ -1113,30 +1116,24 @@ const clearAllData = () => {
         </button>
       </div>
     </div>
-    <div class="row" v-if="viewMode=='chat'">
+    <div class="row" v-if="viewMode == 'chat'">
       <div class="col-12">
         <div class="chat-container">
-        <div class="chat-header">
-            Zazu
-        </div>
-        <div class="chat-body">
+          <div class="chat-header">Zazu</div>
+          <div class="chat-body">
             <div class="message user-message">
-                <div class="message-bubble">
-                    Hello, how can I help you?
-                </div>
+              <div class="message-bubble">Hello, how can I help you?</div>
             </div>
             <div class="message bot-message">
-                <div class="message-bubble">
-                    Hi! I have a question about AI.
-                </div>
+              <div class="message-bubble">Hi! I have a question about AI.</div>
             </div>
             <!-- Add more messages here -->
-        </div>
-        <div class="message-input">
-            <input type="text" placeholder="Type your message...">
+          </div>
+          <div class="message-input">
+            <input type="text" placeholder="Type your message..." />
             <button>Send</button>
+          </div>
         </div>
-    </div>
       </div>
     </div>
   </div>
