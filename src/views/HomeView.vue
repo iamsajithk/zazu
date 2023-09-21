@@ -41,6 +41,13 @@ interface UserProfile {
   expenses?: Expense[];
 }
 
+interface chatLog {
+  id?: number;
+  side: string;
+  content: string;
+  created_at?: string;
+}
+
 const accounts = ref<Account[]>([]);
 const accountTitle = ref<string>("");
 const accountBalance = ref<number>(0);
@@ -70,6 +77,9 @@ const signUpEmail = ref<string>("");
 const signUpPassword = ref<string>("");
 
 const viewMode = ref<string>("data");
+
+const chatLogs = ref<chatLog[]>([]);
+const promptQuestion = ref<string>("");
 
 onMounted(() => {
   loadUserProfile();
@@ -814,6 +824,56 @@ const clearAllData = () => {
       }
     });
 };
+const askZazu = async () => {
+  if (promptQuestion.value == "") {
+    swal.fire({ title: "Please enter your question" });
+    return;
+  }
+  chatLogs.value.push({
+    id: chatLogs.value.length + 1,
+    side: "user",
+    content: promptQuestion.value,
+    created_at: new Date().toISOString(),
+  });
+  const question = promptQuestion.value;
+  promptQuestion.value = "";
+  const progress = useProgress().start();
+  //Do axios API call
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  console.log(apiBaseUrl);
+  await axios
+    .post(
+      `${apiBaseUrl}/api/ai/ask`,
+      {
+        question: question,
+      },
+      {
+        headers: {
+          Authorization: `${userProfile.value.token}`,
+        },
+      }
+    )
+    .then(function (response: any) {
+      progress.finish();
+      console.log(response);
+      if (response.data.status == "success") {
+        if (response.data.answer) {
+          chatLogs.value.push({
+            id: chatLogs.value.length + 1,
+            side: "zazu",
+            content: response.data.answer,
+            created_at: new Date().toISOString(),
+          });
+        }
+      } else {
+        swal.fire({ title: response.data.message });
+      }
+    })
+    .catch(function (error: any) {
+      progress.finish();
+      console.log(error);
+    });
+};
 </script>
 
   <template>
@@ -1121,17 +1181,28 @@ const clearAllData = () => {
         <div class="chat-container">
           <div class="chat-header">Zazu</div>
           <div class="chat-body">
-            <div class="message user-message">
+            <div
+              v-for="message in chatLogs"
+              v-bind:key="message.id"
+              class="message" :class="{ 'user-message': message.side=='user', 'bot-message': message.side=='zazu' }"
+            >
+              <div class="message-bubble">{{ message.content }}</div>
+            </div>
+            <!-- <div class="message user-message">
               <div class="message-bubble">Hello, how can I help you?</div>
             </div>
             <div class="message bot-message">
               <div class="message-bubble">Hi! I have a question about AI.</div>
-            </div>
+            </div> -->
             <!-- Add more messages here -->
           </div>
           <div class="message-input">
-            <input type="text" placeholder="Type your message..." />
-            <button>Send</button>
+            <input
+              type="text"
+              placeholder="Type your message..."
+              v-model="promptQuestion"
+            />
+            <button @click="askZazu">Send</button>
           </div>
         </div>
       </div>
