@@ -107,7 +107,7 @@ img.logo {
 .chat-body {
   padding: 20px;
   overflow-y: scroll;
-  max-height: 300px;
+  /* max-height: 300px; */
 }
 
 .message {
