@@ -84,6 +84,7 @@ const chatCurrentPage = ref<number>(1);
 const allChatMessagesLoaded = ref<boolean>(false);
 const promptQuestion = ref<string>("");
 const isSystemTyping = ref<boolean>(false);
+const isChatLoading = ref<boolean>(false);
 
 onMounted(() => {
   loadUserProfile();
@@ -753,6 +754,7 @@ const doSignIn = () => {
           loadExistingAccounts();
           loadExistingIncomes();
           loadExistingExpenses();
+          loadChatMessages();
           viewMode.value = "chat";
         }
       } else {
@@ -924,6 +926,7 @@ const askZazu = async () => {
     });
 };
 const loadChatMessages = () => {
+  isChatLoading.value = true;
   //Do axios API call
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   console.log(apiBaseUrl);
@@ -941,6 +944,7 @@ const loadChatMessages = () => {
       }
     )
     .then(function (response: any) {
+      isChatLoading.value = false;
       console.log(response);
       if (response.data.status == "success") {
         if (response.data.messages) {
@@ -985,6 +989,7 @@ const loadChatMessages = () => {
       }
     })
     .catch(function (error: any) {
+      isChatLoading.value = false;
       console.log(error);
     });
 };
@@ -1312,6 +1317,9 @@ const handleChatScroll = (event: any) => {
         <div class="chat-container">
           <div class="chat-header">Zazu</div>
           <div class="chat-body" id="chatBody" @scroll="handleChatScroll">
+            <p v-if="isChatLoading">
+              Loading...<span class="typing-indicator"></span>
+            </p>
             <div
               v-for="message in chatMessages"
               v-bind:key="message.id"
