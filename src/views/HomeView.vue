@@ -41,7 +41,7 @@ interface UserProfile {
   expenses?: Expense[];
 }
 
-interface chatLog {
+interface ChatMessage {
   id?: number;
   side: string;
   content: string;
@@ -78,11 +78,16 @@ const signUpPassword = ref<string>("");
 
 const viewMode = ref<string>("data");
 
-const chatLogs = ref<chatLog[]>([]);
+const chatMessages = ref<ChatMessage[]>([]);
+const chatPerPage = ref<number>(10);
+const chatCurrentPage = ref<number>(1);
+const allChatMessagesLoaded = ref<boolean>(false);
 const promptQuestion = ref<string>("");
+const isSystemTyping = ref<boolean>(false);
 
 onMounted(() => {
   loadUserProfile();
+  loadChatMessages();
   syncData();
 });
 const addAccount = () => {
@@ -552,6 +557,9 @@ const openChatSection = () => {
     openAuthModal();
   }
 };
+const openDataSection = () => {
+  viewMode.value = "data";
+};
 
 const loadExistingAccounts = () => {
   //Do axios API call
@@ -824,20 +832,36 @@ const clearAllData = () => {
       }
     });
 };
+const askZazuOnEnter = (event: any) => {
+  if (event.keyCode == 13) {
+    askZazu();
+  }
+};
 const askZazu = async () => {
   if (promptQuestion.value == "") {
     swal.fire({ title: "Please enter your question" });
     return;
   }
-  chatLogs.value.push({
-    id: chatLogs.value.length + 1,
+  chatMessages.value.push({
+    id: chatMessages.value.length + 1,
     side: "user",
     content: promptQuestion.value,
     created_at: new Date().toISOString(),
   });
+  const chatBody = document.getElementById("chatBody");
+  if (chatBody) {
+    setTimeout(() => {
+      //Scroll smoothly to bottom
+      chatBody.scrollTo({
+        top: chatBody.scrollHeight,
+        behavior: "smooth",
+      });
+    }, 100);
+  }
   const question = promptQuestion.value;
   promptQuestion.value = "";
   const progress = useProgress().start();
+  isSystemTyping.value = true;
   //Do axios API call
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   console.log(apiBaseUrl);
@@ -854,25 +878,114 @@ const askZazu = async () => {
       }
     )
     .then(function (response: any) {
+      isSystemTyping.value = false;
       progress.finish();
       console.log(response);
       if (response.data.status == "success") {
         if (response.data.answer) {
-          chatLogs.value.push({
-            id: chatLogs.value.length + 1,
-            side: "zazu",
+          chatMessages.value.push({
+            id: chatMessages.value.length + 1,
+            side: "system",
             content: response.data.answer,
             created_at: new Date().toISOString(),
           });
+          const chatBody = document.getElementById("chatBody");
+          if (chatBody) {
+            setTimeout(() => {
+              //Scroll smoothly to bottom
+              chatBody.scrollTo({
+                top: chatBody.scrollHeight,
+                behavior: "smooth",
+              });
+            }, 100);
+          }
         }
       } else {
         swal.fire({ title: response.data.message });
       }
     })
     .catch(function (error: any) {
+      isSystemTyping.value = false;
       progress.finish();
       console.log(error);
     });
+};
+const loadChatMessages = () => {
+  //Do axios API call
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  console.log(apiBaseUrl);
+  axios
+    .post(
+      `${apiBaseUrl}/api/chat/messages`,
+      {
+        per_page: chatPerPage.value,
+        page: chatCurrentPage.value,
+      },
+      {
+        headers: {
+          Authorization: `${userProfile.value.token}`,
+        },
+      }
+    )
+    .then(function (response: any) {
+      console.log(response);
+      if (response.data.status == "success") {
+        if (response.data.messages) {
+          let messages = [];
+          for (let message of response.data.messages) {
+            messages.push({
+              id: message.id,
+              side: message.side,
+              content: message.message,
+              created_at: message.created_at,
+            });
+          }
+          if (messages.length == 0) {
+            chatCurrentPage.value--;
+            allChatMessagesLoaded.value = true;
+          }
+          //reverse the messages
+          messages = messages.reverse();
+          //Prepend the messages to chatMessages
+          if (chatMessages.value.length > 0) {
+            for (let message of messages) {
+              chatMessages.value.unshift(message);
+            }
+          } else {
+            chatMessages.value = messages;
+          }
+          if (chatCurrentPage.value == 1) {
+            const chatBody = document.getElementById("chatBody");
+            if (chatBody) {
+              setTimeout(() => {
+                //Scroll smoothly to bottom
+                chatBody.scrollTo({
+                  top: chatBody.scrollHeight,
+                  behavior: "smooth",
+                });
+              }, 100);
+            }
+          }
+        }
+      } else {
+        swal.fire({ title: response.data.message });
+      }
+    })
+    .catch(function (error: any) {
+      console.log(error);
+    });
+};
+const handleChatScroll = (event: any) => {
+  const chatBody = document.getElementById("chatBody");
+  if (chatBody) {
+    if (chatBody.scrollTop == 0) {
+      if (allChatMessagesLoaded.value) {
+        return;
+      }
+      chatCurrentPage.value++;
+      loadChatMessages();
+    }
+  }
 };
 </script>
 
@@ -1177,14 +1290,23 @@ const askZazu = async () => {
       </div>
     </div>
     <div class="row" v-if="viewMode == 'chat'">
+      <div class="col-12 text-center">
+        <button class="btn btn-success" @click="openDataSection">
+          Manage Data
+        </button>
+      </div>
       <div class="col-12">
         <div class="chat-container">
           <div class="chat-header">Zazu</div>
-          <div class="chat-body">
+          <div class="chat-body" id="chatBody" @scroll="handleChatScroll">
             <div
-              v-for="message in chatLogs"
+              v-for="message in chatMessages"
               v-bind:key="message.id"
-              class="message" :class="{ 'user-message': message.side=='user', 'bot-message': message.side=='zazu' }"
+              class="message"
+              :class="{
+                'user-message': message.side == 'user',
+                'bot-message': message.side == 'system',
+              }"
             >
               <div class="message-bubble">{{ message.content }}</div>
             </div>
@@ -1195,12 +1317,17 @@ const askZazu = async () => {
               <div class="message-bubble">Hi! I have a question about AI.</div>
             </div> -->
             <!-- Add more messages here -->
+            <!-- Typing bubble indicator -->
+            <p v-if="isSystemTyping">
+              Typing...<span class="typing-indicator"></span>
+            </p>
           </div>
           <div class="message-input">
             <input
               type="text"
-              placeholder="Type your message..."
+              placeholder="Type your question..."
               v-model="promptQuestion"
+              @keydown="askZazuOnEnter($event)"
             />
             <button @click="askZazu">Send</button>
           </div>
