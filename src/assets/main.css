@@ -88,7 +88,7 @@ img.logo {
 
 
 .chat-container {
-  max-width: 600px;
+  /* max-width: 600px; */
   margin: 20px auto;
   background-color: #fff;
   border-radius: 5px;

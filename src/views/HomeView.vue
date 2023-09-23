@@ -961,14 +961,15 @@ const loadChatMessages = () => {
             chatCurrentPage.value--;
             allChatMessagesLoaded.value = true;
           }
-          //reverse the messages
-          messages = messages.reverse();
+
           //Prepend the messages to chatMessages
           if (chatMessages.value.length > 0) {
             for (let message of messages) {
               chatMessages.value.unshift(message);
             }
           } else {
+            //reverse the messages
+            messages = messages.reverse();
             chatMessages.value = messages;
           }
           if (chatCurrentPage.value == 1) {
@@ -1329,7 +1330,9 @@ const handleChatScroll = (event: any) => {
                 'bot-message': message.side == 'system',
               }"
             >
-              <div class="message-bubble">{{ message.content }}</div>
+              <div class="message-bubble">
+                {{ message.content }}
+              </div>
             </div>
             <!-- <div class="message user-message">
               <div class="message-bubble">Hello, how can I help you?</div>
