@@ -553,6 +553,19 @@ const openSignUpTab = () => {
 const openChatSection = () => {
   if (userProfile.value.token) {
     viewMode.value = "chat";
+    setTimeout(() => {
+      //Scroll smoothly to bottom
+      const chatBody = document.getElementById("chatBody");
+      if (chatBody) {
+        setTimeout(() => {
+          //Scroll smoothly to bottom
+          chatBody.scrollTo({
+            top: chatBody.scrollHeight,
+            behavior: "smooth",
+          });
+        }, 100);
+      }
+    }, 100);
   } else {
     openAuthModal();
   }
