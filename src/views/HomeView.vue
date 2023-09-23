@@ -1020,6 +1020,32 @@ const handleChatScroll = (event: any) => {
       </div>
     </div>
     <div class="row" v-if="viewMode == 'data'">
+      <div class="col-12 text-center mb-2">
+        <button @click="openChatSection" class="btn btn-success btn-lg">
+          Ask Zazu
+        </button>
+        <button
+          @click="doLogOut"
+          v-if="userProfile.token"
+          class="btn btn-warning btn-lg mx-1"
+        >
+          Log Out
+        </button>
+        <button
+          @click="clearAllData"
+          v-if="!userProfile.token"
+          class="btn btn-danger btn-lg mx-1"
+        >
+          Clear All
+        </button>
+        <button
+          @click="syncData"
+          v-if="userProfile.token"
+          class="btn icon-button btn-danger"
+        >
+          <v-icon name="fa-sync" />
+        </button>
+      </div>
       <!-- Accounts section starts -->
       <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-xs-12">
         <div class="form-wrap">
@@ -1285,14 +1311,14 @@ const handleChatScroll = (event: any) => {
         <button @click="openChatSection" class="btn btn-success btn-lg">
           Ask Zazu
         </button>
-        <button
+        <!-- <button
           @click="doLogOut"
           v-if="userProfile.token"
           class="btn btn-warning btn-lg mx-1"
         >
           Log Out
-        </button>
-        <button
+        </button> -->
+        <!-- <button
           @click="clearAllData"
           v-if="!userProfile.token"
           class="btn btn-danger btn-lg mx-1"
@@ -1305,7 +1331,7 @@ const handleChatScroll = (event: any) => {
           class="btn icon-button btn-danger"
         >
           <v-icon name="fa-sync" />
-        </button>
+        </button> -->
       </div>
     </div>
     <div class="row" v-if="viewMode == 'chat'">
