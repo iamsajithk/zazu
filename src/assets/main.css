@@ -174,3 +174,21 @@ img.logo {
       opacity: 1;
   }
 }
+
+.footer{
+  bottom: 0;
+  width: 100%;
+  background: #fff;
+  padding: 10px;
+  border-top: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+}
+.footer-link{
+  color: #000;
+  text-decoration: none;
+  margin-right: 10px;
+}
+.footer-link:hover{
+  text-decoration: underline;
+}

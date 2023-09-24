@@ -1545,4 +1545,9 @@ const handleChatScroll = (event: any) => {
       </div>
     </div>
   </div>
+  <footer class="footer">
+    |<a class="footer-link" href="https://github.com/iamsajithk/zazu">Github</a>|
+    <a class="footer-link" href="https://peerlist.io/iamsajithk">Peerlist Profile</a>|
+    <a class="footer-link" href="https://peerlist.io/iamsajithk/project/zazu">Peerlist Project</a>|
+  </footer>
 </template>
